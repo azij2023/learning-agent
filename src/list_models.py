@@ -12,6 +12,7 @@ print("Raw models list:", models)
 
 # If it's a list of dicts, print the keys
 for m in models:
+
     # m might be a tuple like (id, metadata) or a dict
     if isinstance(m, dict):
         print(m.get("id", m))
