@@ -1,0 +1,7 @@
+
+langchain-openai
+langchain-google
+tavily-python
+faiss-cpu
+chromadb
+langchain==0.1.0
