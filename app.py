@@ -1,7 +1,7 @@
 import streamlit as st
 from src.main import run_checkpoint
 
-st.title("Learning Agent 🚀")
+st.title("Learning Agent")
 
 topic = st.text_input("Enter a topic:")
 context = st.text_area("Optional context:")
@@ -45,7 +45,7 @@ if "state" in st.session_state:
                 topic, context, learner_answers=learner_answers
             )
 
-    # ✅ Always show quiz score if available
+    # ✅ Show quiz score if available (and not in Feynman loop yet)
     if hasattr(state, "verification_score") and state.verification_score is not None and not getattr(state, "feynman_required", False):
         score = state.verification_score
         st.write(f"Your score: {score:.1f}%")
@@ -74,7 +74,7 @@ if "state" in st.session_state:
                     topic, context, retry_answers=retry_answers
                 )
 
-    # ✅ Always show retry score if available
+    # ✅ Show retry score if available
     if getattr(state, "feynman_required", False) and hasattr(state, "verification_score") and state.verification_score is not None:
         retry_score = state.verification_score
         st.write(f"Your retry score: {retry_score:.1f}%")
