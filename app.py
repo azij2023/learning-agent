@@ -1,7 +1,7 @@
 import streamlit as st
 from src.main import run_checkpoint
 
-st.title("Learning Agent")
+st.title("Learning Agent 🚀")
 
 topic = st.text_input("Enter a topic:")
 context = st.text_area("Optional context:")
@@ -44,14 +44,9 @@ if "state" in st.session_state:
             st.session_state.state = run_checkpoint(
                 topic, context, learner_answers=learner_answers
             )
-            state = st.session_state.state
-            score = state.verification_score
-            st.write(f"Your score: {score:.1f}%")
-
-            if score >= 70.0:
-                st.success("🎉 Congratulations! Great job on the quiz!")
 
     # 3️⃣ Feynman explanation + retry quiz (separate block)
+    state = st.session_state.state
     if getattr(state, "feynman_required", False):
         st.write("### Feynman Explanation")
         st.write("\n".join(state.messages))
