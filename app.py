@@ -1,29 +1,18 @@
 import streamlit as st
-from langchain_openai import ChatOpenAI
-from langgraph.graph import StateGraph
-from typing import TypedDict
+from groq import Groq
 
-# Define state
-class AgentState(TypedDict):
-    question: str
-    answer: str
+# Load Groq key from secrets
+groq_key = st.secrets["GROQ_API_KEY"]
 
-# Node function
-def ask_llm(state: AgentState) -> AgentState:
-    llm = ChatOpenAI(api_key=st.secrets["LANGCHAIN_API_KEY"], model="gpt-4o-mini")
-    response = llm.invoke(state["question"])
-    return {"question": state["question"], "answer": response.content}
+# Initialize Groq client
+client = Groq(api_key=groq_key)
 
-# Build graph
-graph = StateGraph(AgentState)
-graph.add_node("llm", ask_llm)
-graph.set_entry_point("llm")
-graph.set_finish_point("llm")
-app = graph.compile()
-
-# Streamlit UI
 st.title("Learning Agent 🚀")
 user_input = st.text_input("Ask me anything:")
+
 if user_input:
-    result = app.invoke({"question": user_input})
-    st.write("Answer:", result["answer"])
+    response = client.chat.completions.create(
+        model="llama-3.1-70b-versatile",  # Groq model
+        messages=[{"role": "user", "content": user_input}],
+    )
+    st.write("Answer:", response.choices[0].message.content)
