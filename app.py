@@ -15,9 +15,16 @@ if "state" in st.session_state:
     state = st.session_state.state
 
     # 1️⃣ Show relevance score only
-    if hasattr(state, "relevance_score"):
+    if hasattr(state, "relevance_score") and state.relevance_score is not None:
         st.write("### Relevance Score")
         st.write(f"Context relevance score = {state.relevance_score}")
+    else:
+        # fallback: parse from pipeline messages if not exposed directly
+        for msg in getattr(state, "messages", []):
+            if "RelevanceScorer" in msg and "score" in msg.lower():
+                st.write("### Relevance Score")
+                st.write(msg)
+                break
 
     # 2️⃣ Show explanation + first quiz
     if hasattr(state, "explanation") and state.questions and not getattr(state, "feynman_required", False):
