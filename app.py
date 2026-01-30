@@ -14,14 +14,16 @@ if st.button("Run Agent"):
 if "state" in st.session_state:
     state = st.session_state.state
 
-    # ✅ Show relevance score only
+    # 1️⃣ Show relevance score only
     if hasattr(state, "relevance_score"):
         st.write("### Relevance Score")
-        st.progress(state.relevance_score / 10)  # assuming score is 0–10
         st.write(f"Context relevance score = {state.relevance_score}")
 
-    # ✅ First quiz
-    if state.questions and not getattr(state, "feynman_required", False):
+    # 2️⃣ Show explanation + first quiz
+    if hasattr(state, "explanation") and state.questions and not getattr(state, "feynman_required", False):
+        st.write("### Explanation")
+        st.write(state.explanation)
+
         st.write("### Quiz")
         learner_answers = []
         for i, q in enumerate(state.questions, start=1):
@@ -44,7 +46,7 @@ if "state" in st.session_state:
             if score >= 70.0:
                 st.success("🎉 Congratulations! Great job on the quiz!")
 
-    # ✅ Feynman explanation + retry quiz if required
+    # 3️⃣ Feynman explanation + retry quiz if required
     if getattr(state, "feynman_required", False):
         st.write("### Feynman Explanation")
         st.write("\n".join(state.messages))
