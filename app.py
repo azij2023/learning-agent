@@ -1,7 +1,7 @@
 import streamlit as st
 from src.main import run_checkpoint
 
-st.title("Learning Agent 🚀")
+st.title("Learning Agent")
 
 topic = st.text_input("Enter a topic:")
 context = st.text_area("Optional context:")
