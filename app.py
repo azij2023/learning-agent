@@ -27,7 +27,7 @@ if "state" in st.session_state:
                 break
 
     # 2️⃣ Show explanation + first quiz
-    if hasattr(state, "explanation") and state.questions and not getattr(state, "feynman_required", False):
+    if hasattr(state, "explanation") and state.questions:
         st.write("### Explanation")
         st.write(state.explanation)
 
@@ -43,38 +43,40 @@ if "state" in st.session_state:
                 learner_answers.append(selected.split()[0])  # capture A/B/C/D
 
         if st.button("Submit Answers"):
+            # run pipeline with learner answers
             st.session_state.state = run_checkpoint(
                 topic, context, learner_answers=learner_answers
             )
-            score = st.session_state.state.verification_score
+            state = st.session_state.state  # refresh state
+
+            score = state.verification_score
             st.write(f"Your score: {score:.1f}%")
 
-            # 🎉 Congratulate if score >=70
             if score >= 70.0:
                 st.success("🎉 Congratulations! Great job on the quiz!")
+            else:
+                # 3️⃣ Feynman explanation + retry quiz
+                st.write("### Feynman Explanation")
+                st.write("\n".join(state.messages))
 
-    # 3️⃣ Feynman explanation + retry quiz if required
-    if getattr(state, "feynman_required", False):
-        st.write("### Feynman Explanation")
-        st.write("\n".join(state.messages))
+                if state.questions:
+                    st.write("### Retry Quiz")
+                    retry_answers = []
+                    for i, q in enumerate(state.questions, start=1):
+                        selected = st.radio(
+                            f"Retry Q{i}: {q['question']}",
+                            q["options"],
+                            key=f"retry{i}"
+                        )
+                        if selected:
+                            retry_answers.append(selected.split()[0])
+                    if st.button("Submit Retry Answers"):
+                        st.session_state.state = run_checkpoint(
+                            topic, context, retry_answers=retry_answers
+                        )
+                        retry_state = st.session_state.state
+                        retry_score = retry_state.verification_score
+                        st.write(f"Your retry score: {retry_score:.1f}%")
 
-        if state.questions:
-            st.write("### Retry Quiz")
-            retry_answers = []
-            for i, q in enumerate(state.questions, start=1):
-                selected = st.radio(
-                    f"Retry Q{i}: {q['question']}",
-                    q["options"],
-                    key=f"retry{i}"
-                )
-                if selected:
-                    retry_answers.append(selected.split()[0])
-            if st.button("Submit Retry Answers"):
-                st.session_state.state = run_checkpoint(
-                    topic, context, retry_answers=retry_answers
-                )
-                retry_score = st.session_state.state.verification_score
-                st.write(f"Your retry score: {retry_score:.1f}%")
-
-                if retry_score >= 70.0:
-                    st.success("🎉 Congratulations! You nailed it after retry!")
+                        if retry_score >= 70.0:
+                            st.success("🎉 Congratulations! You nailed it after retry!")
