@@ -45,8 +45,14 @@ if "state" in st.session_state:
                 topic, context, learner_answers=learner_answers
             )
 
-    # 3️⃣ Feynman explanation + retry quiz (separate block)
-    state = st.session_state.state
+    # ✅ Always show quiz score if available
+    if hasattr(state, "verification_score"):
+        score = state.verification_score
+        st.write(f"Your score: {score:.1f}%")
+        if score >= 70.0:
+            st.success("🎉 Congratulations! Great job on the quiz!")
+
+    # 3️⃣ Feynman explanation + retry quiz
     if getattr(state, "feynman_required", False):
         st.write("### Feynman Explanation")
         st.write("\n".join(state.messages))
@@ -67,9 +73,10 @@ if "state" in st.session_state:
                 st.session_state.state = run_checkpoint(
                     topic, context, retry_answers=retry_answers
                 )
-                retry_state = st.session_state.state
-                retry_score = retry_state.verification_score
-                st.write(f"Your retry score: {retry_score:.1f}%")
 
-                if retry_score >= 70.0:
-                    st.success("🎉 Congratulations! You nailed it after retry!")
+    # ✅ Always show retry score if available
+    if getattr(state, "feynman_required", False) and hasattr(state, "verification_score"):
+        retry_score = state.verification_score
+        st.write(f"Your retry score: {retry_score:.1f}%")
+        if retry_score >= 70.0:
+            st.success("🎉 Congratulations! You nailed it after retry!")
