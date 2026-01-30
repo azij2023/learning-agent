@@ -1,12 +1,29 @@
 import streamlit as st
+from langchain_openai import ChatOpenAI
+from langgraph.graph import StateGraph
+from typing import TypedDict
 
-st.title("Learning Agent")
+# Define state
+class AgentState(TypedDict):
+    question: str
+    answer: str
 
-st.write("Welcome to your Streamlit app! 🚀")
+# Node function
+def ask_llm(state: AgentState) -> AgentState:
+    llm = ChatOpenAI(api_key=st.secrets["LANGCHAIN_API_KEY"], model="gpt-4o-mini")
+    response = llm.invoke(state["question"])
+    return {"question": state["question"], "answer": response.content}
 
-# Example: read secrets securely
-groq_key = st.secrets.get("GROQ_API_KEY", "Not set")
-langchain_key = st.secrets.get("LANGCHAIN_API_KEY", "Not set")
+# Build graph
+graph = StateGraph(AgentState)
+graph.add_node("llm", ask_llm)
+graph.set_entry_point("llm")
+graph.set_finish_point("llm")
+app = graph.compile()
 
-st.write("Groq Key (hidden in Streamlit Cloud):", groq_key[:4] + "****")
-st.write("LangChain Key (hidden in Streamlit Cloud):", langchain_key[:4] + "****")
+# Streamlit UI
+st.title("Learning Agent 🚀")
+user_input = st.text_input("Ask me anything:")
+if user_input:
+    result = app.invoke({"question": user_input})
+    st.write("Answer:", result["answer"])
