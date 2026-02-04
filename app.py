@@ -63,7 +63,7 @@ if "state" in st.session_state:
     # 3️⃣ Feynman explanation + retry quiz
     if st.session_state.feynman_done:
         st.write("### Feynman Explanation")
-        #st.write("\n".join(state.messages))
+        st.write("\n".join(state.messages))
 
         if not st.session_state.retry_done and state.questions:
             st.write("### Retry Quiz")
