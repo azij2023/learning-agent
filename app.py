@@ -93,3 +93,17 @@ if st.session_state.feynman_done:
                 topic, context, retry_answers=retry_answers
             )
             st.session_state.retry_done = True
+# ✅ Show retry score if available
+if st.session_state.retry_done and hasattr(state, "verification_score") and state.verification_score is not None:
+    retry_score = state.verification_score
+    st.write(f"Your retry score: {retry_score:.1f}%")
+
+    if retry_score >= 70.0:
+        st.success("🎉 Congratulations! You nailed it after retry!")
+        # Reset flags so flow ends cleanly
+        st.session_state.feynman_done = False
+    else:
+        st.warning("Score still too low (<70%). Let's try another Feynman explanation!")
+        # Trigger another Feynman loop
+        st.session_state.feynman_done = True
+        st.session_state.retry_done = False
