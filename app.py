@@ -1,12 +1,12 @@
 import streamlit as st
 from src.main import run_checkpoint
 
-st.title("Learning Agent 🚀")
+st.title("Learning Agent")
 
 topic = st.text_input("Enter a topic:")
 context = st.text_area("Optional context:")
 
-# Initialize flags
+# Initialize flags to enforce sequence
 if "quiz_done" not in st.session_state:
     st.session_state.quiz_done = False
 if "feynman_done" not in st.session_state:
@@ -14,7 +14,7 @@ if "feynman_done" not in st.session_state:
 if "retry_done" not in st.session_state:
     st.session_state.retry_done = False
 
-# Run agent once and store state
+# Run agent once and reset flags
 if st.button("Run Agent"):
     st.session_state.state = run_checkpoint(topic, context)
     st.session_state.quiz_done = False
@@ -63,7 +63,13 @@ if "state" in st.session_state:
     # 3️⃣ Feynman explanation + retry quiz
     if st.session_state.feynman_done:
         st.write("### Feynman Explanation")
-        st.write("\n".join(state.messages))
+
+        # Filter messages: only show relevance score + Feynman explanation
+        for msg in getattr(state, "messages", []):
+            if "context relevance score" in msg.lower():
+                st.write(msg)
+            elif "feynman explanation" in msg.lower():
+                st.write(msg)
 
         if not st.session_state.retry_done and state.questions:
             st.write("### Retry Quiz")
