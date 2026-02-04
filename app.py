@@ -1,14 +1,25 @@
 import streamlit as st
 from src.main import run_checkpoint
 
-st.title("Learning Agent")
+st.title("Learning Agent 🚀")
 
 topic = st.text_input("Enter a topic:")
 context = st.text_area("Optional context:")
 
+# Initialize flags
+if "quiz_done" not in st.session_state:
+    st.session_state.quiz_done = False
+if "feynman_done" not in st.session_state:
+    st.session_state.feynman_done = False
+if "retry_done" not in st.session_state:
+    st.session_state.retry_done = False
+
 # Run agent once and store state
 if st.button("Run Agent"):
     st.session_state.state = run_checkpoint(topic, context)
+    st.session_state.quiz_done = False
+    st.session_state.feynman_done = False
+    st.session_state.retry_done = False
 
 if "state" in st.session_state:
     state = st.session_state.state
@@ -17,15 +28,9 @@ if "state" in st.session_state:
     if hasattr(state, "relevance_score") and state.relevance_score is not None:
         st.write("### Relevance Score")
         st.write(f"Context relevance score = {state.relevance_score}")
-    else:
-        for msg in getattr(state, "messages", []):
-            if "RelevanceScorer" in msg and "score" in msg.lower():
-                st.write("### Relevance Score")
-                st.write(msg)
-                break
 
     # 2️⃣ Explanation + first quiz
-    if hasattr(state, "explanation") and state.questions and not getattr(state, "feynman_required", False):
+    if not st.session_state.quiz_done and hasattr(state, "explanation") and state.questions:
         st.write("### Explanation")
         st.write(state.explanation)
 
@@ -44,20 +49,23 @@ if "state" in st.session_state:
             st.session_state.state = run_checkpoint(
                 topic, context, learner_answers=learner_answers
             )
+            st.session_state.quiz_done = True
 
-    # ✅ Show quiz score if available (and not in Feynman loop yet)
-    if hasattr(state, "verification_score") and state.verification_score is not None and not getattr(state, "feynman_required", False):
+    # ✅ Show quiz score if available
+    if st.session_state.quiz_done and hasattr(state, "verification_score") and state.verification_score is not None:
         score = state.verification_score
         st.write(f"Your score: {score:.1f}%")
         if score >= 70.0:
             st.success("🎉 Congratulations! Great job on the quiz!")
+        else:
+            st.session_state.feynman_done = True
 
     # 3️⃣ Feynman explanation + retry quiz
-    if getattr(state, "feynman_required", False):
+    if st.session_state.feynman_done:
         st.write("### Feynman Explanation")
         st.write("\n".join(state.messages))
 
-        if state.questions:
+        if not st.session_state.retry_done and state.questions:
             st.write("### Retry Quiz")
             retry_answers = []
             for i, q in enumerate(state.questions, start=1):
@@ -73,9 +81,10 @@ if "state" in st.session_state:
                 st.session_state.state = run_checkpoint(
                     topic, context, retry_answers=retry_answers
                 )
+                st.session_state.retry_done = True
 
     # ✅ Show retry score if available
-    if getattr(state, "feynman_required", False) and hasattr(state, "verification_score") and state.verification_score is not None:
+    if st.session_state.retry_done and hasattr(state, "verification_score") and state.verification_score is not None:
         retry_score = state.verification_score
         st.write(f"Your retry score: {retry_score:.1f}%")
         if retry_score >= 70.0:
