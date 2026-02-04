@@ -61,37 +61,32 @@ if "state" in st.session_state:
             st.session_state.feynman_done = True
 
     # 3️⃣ Feynman explanation + retry quiz
-    if st.session_state.feynman_done:
-        st.write("### Feynman Explanation")
+    # 3️⃣ Feynman explanation + retry quiz
+if st.session_state.feynman_done:
+    st.write("### Feynman Explanation")
 
-        # Filter messages: only show relevance score + Feynman explanation
-        for msg in getattr(state, "messages", []):
-            if "context relevance score" in msg.lower():
-                st.write(msg)
-            elif "feynman explanation" in msg.lower():
-                st.write(msg)
+    # Filter messages: only show relevance score + Feynman explanation
+    for msg in getattr(state, "messages", []):
+        if "context relevance score" in msg.lower():
+            st.write(msg)
+        elif "feynman explanation" in msg.lower():
+            st.write(msg)
 
-        if not st.session_state.retry_done and state.questions:
-            st.write("### Retry Quiz")
-            retry_answers = []
-            for i, q in enumerate(state.questions, start=1):
-                selected = st.radio(
-                    f"Retry Q{i}: {q['question']}",
-                    q["options"],
-                    key=f"retry{i}"
-                )
-                if selected:
-                    retry_answers.append(selected.split()[0])
+    if not st.session_state.retry_done and state.questions:
+        st.write("### Retry Quiz")
+        retry_answers = []
+        for i, q in enumerate(state.questions, start=1):
+            selected = st.radio(
+                f"Retry Q{i}: {q['question']}",
+                q["options"],
+                key=f"retry{i}"
+            )
+            if selected:
+                retry_answers.append(selected.split()[0])
 
-            if st.button("Submit Retry Answers"):
-                st.session_state.state = run_checkpoint(
-                    topic, context, retry_answers=retry_answers
-                )
-                st.session_state.retry_done = True
+        if st.button("Submit Retry Answers"):
+            st.session_state.state = run_checkpoint(
+                topic, context, retry_answers=retry_answers
+            )
+            st.session_state.retry_done = True
 
-    # ✅ Show retry score if available
-    if st.session_state.retry_done and hasattr(state, "verification_score") and state.verification_score is not None:
-        retry_score = state.verification_score
-        st.write(f"Your retry score: {retry_score:.1f}%")
-        if retry_score >= 70.0:
-            st.success("🎉 Congratulations! You nailed it after retry!")
