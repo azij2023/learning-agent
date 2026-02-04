@@ -60,15 +60,19 @@ if "state" in st.session_state:
         else:
             st.session_state.feynman_done = True
 
-    # 3️⃣ Feynman explanation + retry quiz
-    # 3️⃣ Feynman explanation + retry quiz
+import re
+
+# 3️⃣ Feynman explanation + retry quiz
 if st.session_state.feynman_done:
     st.write("### Feynman Explanation")
 
     # Filter messages: only show relevance score + Feynman explanation
     for msg in getattr(state, "messages", []):
         if "context relevance score" in msg.lower():
-            st.write(msg)
+            # Extract just the score using regex
+            match = re.search(r"context relevance score\s*=\s*\d+", msg, re.IGNORECASE)
+            if match:
+                st.write(match.group(0))   # prints only "context relevance score = 5"
         elif "feynman explanation" in msg.lower():
             st.write(msg)
 
@@ -89,4 +93,3 @@ if st.session_state.feynman_done:
                 topic, context, retry_answers=retry_answers
             )
             st.session_state.retry_done = True
-
