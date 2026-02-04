@@ -1,4 +1,5 @@
 import streamlit as st
+import re
 from src.main import run_checkpoint
 
 st.title("Learning Agent")
@@ -28,6 +29,14 @@ if "state" in st.session_state:
     if hasattr(state, "relevance_score") and state.relevance_score is not None:
         st.write("### Relevance Score")
         st.write(f"Context relevance score = {state.relevance_score}")
+    else:
+        for msg in getattr(state, "messages", []):
+            if "context relevance score" in msg.lower():
+                match = re.search(r"context relevance score\s*=\s*\d+", msg, re.IGNORECASE)
+                if match:
+                    st.write("### Relevance Score")
+                    st.write(match.group(0))
+                break
 
     # 2️⃣ Explanation + first quiz
     if not st.session_state.quiz_done and hasattr(state, "explanation") and state.questions:
@@ -57,53 +66,50 @@ if "state" in st.session_state:
         st.write(f"Your score: {score:.1f}%")
         if score >= 70.0:
             st.success("🎉 Congratulations! Great job on the quiz!")
+            st.session_state.feynman_done = False
         else:
             st.session_state.feynman_done = True
 
-import re
+    # 3️⃣ Feynman explanation + retry quiz
+    if st.session_state.feynman_done:
+        st.write("### Feynman Explanation")
 
-# 3️⃣ Feynman explanation + retry quiz
-if st.session_state.feynman_done:
-    st.write("### Feynman Explanation")
+        # Filter messages: only show relevance score + Feynman explanation
+        for msg in getattr(state, "messages", []):
+            if "context relevance score" in msg.lower():
+                match = re.search(r"context relevance score\s*=\s*\d+", msg, re.IGNORECASE)
+                if match:
+                    st.write(match.group(0))
+            elif "feynman explanation" in msg.lower():
+                st.write(msg)
 
-    # Filter messages: only show relevance score + Feynman explanation
-    for msg in getattr(state, "messages", []):
-        if "context relevance score" in msg.lower():
-            # Extract just the score using regex
-            match = re.search(r"context relevance score\s*=\s*\d+", msg, re.IGNORECASE)
-            if match:
-                st.write(match.group(0))   # prints only "context relevance score = 5"
-        elif "feynman explanation" in msg.lower():
-            st.write(msg)
+        if not st.session_state.retry_done and state.questions:
+            st.write("### Retry Quiz")
+            retry_answers = []
+            for i, q in enumerate(state.questions, start=1):
+                selected = st.radio(
+                    f"Retry Q{i}: {q['question']}",
+                    q["options"],
+                    key=f"retry{i}"
+                )
+                if selected:
+                    retry_answers.append(selected.split()[0])
 
-    if not st.session_state.retry_done and state.questions:
-        st.write("### Retry Quiz")
-        retry_answers = []
-        for i, q in enumerate(state.questions, start=1):
-            selected = st.radio(
-                f"Retry Q{i}: {q['question']}",
-                q["options"],
-                key=f"retry{i}"
-            )
-            if selected:
-                retry_answers.append(selected.split()[0])
+            if st.button("Submit Retry Answers"):
+                st.session_state.state = run_checkpoint(
+                    topic, context, retry_answers=retry_answers
+                )
+                st.session_state.retry_done = True
 
-        if st.button("Submit Retry Answers"):
-            st.session_state.state = run_checkpoint(
-                topic, context, retry_answers=retry_answers
-            )
-            st.session_state.retry_done = True
-# ✅ Show retry score if available
-if st.session_state.retry_done and hasattr(state, "verification_score") and state.verification_score is not None:
-    retry_score = state.verification_score
-    st.write(f"Your retry score: {retry_score:.1f}%")
+    # ✅ Show retry score if available
+    if st.session_state.retry_done and hasattr(state, "verification_score") and state.verification_score is not None:
+        retry_score = state.verification_score
+        st.write(f"Your retry score: {retry_score:.1f}%")
 
-    if retry_score >= 70.0:
-        st.success("🎉 Congratulations! You nailed it after retry!")
-        # Reset flags so flow ends cleanly
-        st.session_state.feynman_done = False
-    else:
-        st.warning("Score still too low (<70%). Let's try another Feynman explanation!")
-        # Trigger another Feynman loop
-        st.session_state.feynman_done = True
-        st.session_state.retry_done = False
+        if retry_score >= 70.0:
+            st.success("🎉 Congratulations! You nailed it after retry!")
+            st.session_state.feynman_done = False
+        else:
+            st.warning("Score still too low (<70%). Let's try another Feynman explanation!")
+            st.session_state.feynman_done = True
+            st.session_state.retry_done = False
