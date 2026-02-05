@@ -20,44 +20,7 @@ flowchart TD
     H --> J[Next Checkpoint or End]
 
 
-🎯 Project Objectives
-Structured guidance through checkpoints
 
-Flexible context (notes + web search)
-
-Rigorous assessment with ≥70% threshold
-
-Adaptive simplification using Feynman pedagogy
-
-Mastery-based progression
-
-Interactive learner interface
-
-🛠️ Tech Stack
-Python
-
-LangGraph (stateful learning workflow)
-
-LangChain (LLM integration, embeddings, search)
-
-LLM APIs (Gemini, OpenAI, Claude)
-
-Vector Stores (FAISS, ChromaDB)
-
-Streamlit (UI deployment)
-
-📌 Milestones
-Milestone	Focus	Deliverables	Status
-1	Checkpoint Structure & Context Gathering	Environment setup, checkpoint schema, context validation	✅ Completed
-2	Context Processing & Initial Verification	Chunking, embeddings, question generation, scoring logic	✅ Completed
-3	Feynman Teaching Implementation	Adaptive explanations, loop-back mechanism	✅ Completed
-4	Integration & End-to-End Testing	Full workflow, multi-checkpoint progression, UI	✅ Completed
-📈 Results
-Reliable context gathering (avg relevance ≥4/5)
-
-Accurate question generation (>80% relevance)
-
-Scoring logic validated (>90% accuracy)
 
 Feynman explanations rated “simpler” in >80% of cases
 
