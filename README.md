@@ -19,6 +19,7 @@ flowchart TD
     I --> E
     H --> J[Next Checkpoint or End]
 ```
+
 🎯 Project Objectives
 Structured guidance through checkpoints
 
