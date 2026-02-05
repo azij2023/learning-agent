@@ -18,7 +18,7 @@ flowchart TD
     G -->|No| I[Feynman Teaching]
     I --> E
     H --> J[Next Checkpoint or End]
-
+```
 🎯 Project Objectives
 Structured guidance through checkpoints
 
@@ -45,12 +45,15 @@ Vector Stores (FAISS, ChromaDB)
 
 Streamlit (UI deployment)
 
-📌 Milestones
-Milestone	Focus	Deliverables	Status
-1	Checkpoint Structure & Context Gathering	Environment setup, checkpoint schema, context validation	✅ Completed
-2	Context Processing & Initial Verification	Chunking, embeddings, question generation, scoring logic	✅ Completed
-3	Feynman Teaching Implementation	Adaptive explanations, loop-back mechanism	✅ Completed
-4	Integration & End-to-End Testing	Full workflow, multi-checkpoint progression, UI	✅ Completed
+## 📌 Milestones
+
+| Milestone | Focus                               | Deliverables                                      | Status        |
+|-----------|-------------------------------------|--------------------------------------------------|---------------|
+| **1**     | Checkpoint Structure & Context Gathering | Environment setup, checkpoint schema, context validation | ✅ Completed |
+| **2**     | Context Processing & Initial Verification | Chunking, embeddings, question generation, scoring logic | ✅ Completed |
+| **3**     | Feynman Teaching Implementation     | Adaptive explanations, loop-back mechanism        | ✅ Completed |
+| **4**     | Integration & End-to-End Testing    | Full workflow, multi-checkpoint progression, UI   | ✅ Completed |
+
 📈 Results
 Reliable context gathering (avg relevance ≥4/5)
 
