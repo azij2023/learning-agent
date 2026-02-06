@@ -39,6 +39,7 @@ Context:
     except ValueError:
         score_val = None
 
+    # ✅ set numeric attribute
     state.relevance_score = score_val
     state.messages.append(f"RelevanceScorer: context relevance score = {score_text}")
     return state
