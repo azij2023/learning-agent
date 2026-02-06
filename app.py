@@ -7,13 +7,17 @@ st.title("Learning Agent")
 topic = st.text_input("Enter a topic:")
 context = st.text_area("Optional context:")
 
-# Initialize flags to enforce sequence
+# Initialize flags and storage
 if "quiz_done" not in st.session_state:
     st.session_state.quiz_done = False
 if "feynman_done" not in st.session_state:
     st.session_state.feynman_done = False
 if "retry_done" not in st.session_state:
     st.session_state.retry_done = False
+if "explanation" not in st.session_state:
+    st.session_state.explanation = None
+if "questions" not in st.session_state:
+    st.session_state.questions = None
 
 # Run agent once and reset flags
 if st.button("Run Agent"):
@@ -21,31 +25,33 @@ if st.button("Run Agent"):
     st.session_state.quiz_done = False
     st.session_state.feynman_done = False
     st.session_state.retry_done = False
+    st.session_state.explanation = getattr(st.session_state.state, "explanation", None)
+    st.session_state.questions = getattr(st.session_state.state, "questions", None)
 
 if "state" in st.session_state:
     state = st.session_state.state
 
     # 1️⃣ Show relevance score only
     if hasattr(state, "relevance_score") and state.relevance_score is not None:
-        st.write("### Relevance Score")
-        st.write(f"Context relevance score = {state.relevance_score}")
+        st.subheader("📊 Relevance Score")
+        st.metric("Context Match", f"{state.relevance_score*100:.1f}%")
     else:
         for msg in getattr(state, "messages", []):
             if "context relevance score" in msg.lower():
                 match = re.search(r"context relevance score\s*=\s*\d+", msg, re.IGNORECASE)
                 if match:
-                    st.write("### Relevance Score")
+                    st.subheader("📊 Relevance Score")
                     st.write(match.group(0))
                 break
 
     # 2️⃣ Explanation + first quiz
-    if not st.session_state.quiz_done and hasattr(state, "explanation") and state.questions:
-        st.write("### Explanation")
-        st.write(state.explanation)
+    if not st.session_state.quiz_done and st.session_state.explanation and st.session_state.questions:
+        st.subheader("📝 Explanation")
+        st.write(st.session_state.explanation)
 
-        st.write("### Quiz")
+        st.subheader("❓ Quiz")
         learner_answers = []
-        for i, q in enumerate(state.questions, start=1):
+        for i, q in enumerate(st.session_state.questions, start=1):
             selected = st.radio(
                 f"Q{i}: {q['question']}",
                 q["options"],
@@ -72,21 +78,15 @@ if "state" in st.session_state:
 
     # 3️⃣ Feynman explanation + retry quiz
     if st.session_state.feynman_done:
-        st.write("### Feynman Explanation")
-
-        # Filter messages: only show relevance score + Feynman explanation
+        st.subheader("🧠 Feynman Explanation")
         for msg in getattr(state, "messages", []):
-            if "context relevance score" in msg.lower():
-                match = re.search(r"context relevance score\s*=\s*\d+", msg, re.IGNORECASE)
-                if match:
-                    st.write(match.group(0))
-            elif "feynman explanation" in msg.lower():
+            if "feynman explanation" in msg.lower():
                 st.write(msg)
 
-        if not st.session_state.retry_done and state.questions:
-            st.write("### Retry Quiz")
+        if not st.session_state.retry_done and st.session_state.questions:
+            st.subheader("🔄 Retry Quiz")
             retry_answers = []
-            for i, q in enumerate(state.questions, start=1):
+            for i, q in enumerate(st.session_state.questions, start=1):
                 selected = st.radio(
                     f"Retry Q{i}: {q['question']}",
                     q["options"],
@@ -107,9 +107,9 @@ if "state" in st.session_state:
         st.write(f"Your retry score: {retry_score:.1f}%")
 
         if retry_score >= 70.0:
-            st.success("🎉 Congratulations! You nailed it after retry!")
+            st.success("🎉 You nailed it after retry!")
             st.session_state.feynman_done = False
         else:
-            st.warning("Score still too low (<70%). Let's try another Feynman explanation!")
+            st.warning("Score still too low (<70%). Another Feynman explanation will be triggered.")
             st.session_state.feynman_done = True
             st.session_state.retry_done = False
