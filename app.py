@@ -31,7 +31,7 @@ if st.button("Run Agent"):
 if "state" in st.session_state:
     state = st.session_state.state
 
-    # 1️⃣ Show relevance score only
+    # 1️⃣ Show relevance score
     if hasattr(state, "relevance_score") and state.relevance_score is not None:
         st.subheader("📊 Relevance Score")
         st.metric("Context Match", f"{state.relevance_score*100:.1f}%")
@@ -58,7 +58,7 @@ if "state" in st.session_state:
                 key=f"q{i}"
             )
             if selected:
-                learner_answers.append(selected.split()[0])
+                learner_answers.append(selected)  # ✅ capture full option text
 
         if st.button("Submit Answers"):
             st.session_state.state = run_checkpoint(
@@ -93,7 +93,7 @@ if "state" in st.session_state:
                     key=f"retry{i}"
                 )
                 if selected:
-                    retry_answers.append(selected.split()[0])
+                    retry_answers.append(selected)  # ✅ full option text again
 
             if st.button("Submit Retry Answers"):
                 st.session_state.state = run_checkpoint(
