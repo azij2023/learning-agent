@@ -7,7 +7,6 @@ def relevance_scorer(state: AgentState) -> AgentState:
     topic = state.checkpoints[state.checkpoint_index]["topic"]
     context = state.context_raw
 
-    # If no context provided, skip scoring
     if not context:
         state.messages.append("RelevanceScorer: no context provided, skipping scoring")
         state.relevance_score = None
@@ -26,7 +25,7 @@ Context:
 """
 
     response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",  # fast model for scoring
+        model="llama-3.1-8b-instant",
         messages=[
             {"role": "system", "content": "You are a strict relevance scorer."},
             {"role": "user", "content": prompt}
@@ -38,7 +37,6 @@ Context:
     try:
         score_val = float(score_text)
     except ValueError:
-        # fallback if model returns something unexpected
         score_val = None
 
     state.relevance_score = score_val
