@@ -1,5 +1,4 @@
 import streamlit as st
-import re
 from src.main import run_checkpoint
 
 st.title("Learning Agent")
@@ -34,21 +33,11 @@ if st.button("Run Agent"):
 if "state" in st.session_state:
     state = st.session_state.state
 
-    # 1️⃣ Show relevance score
-    score_val = None
-    if hasattr(state, "relevance_score") and state.relevance_score is not None:
-        score_val = state.relevance_score
-    else:
-        for msg in getattr(state, "messages", []):
-            match = re.search(r"relevance score\s*=\s*([0-9\.]+)", msg, re.IGNORECASE)
-            if match:
-                score_val = float(match.group(1))
-                break
-
-    if score_val is not None:
-        st.session_state.relevance_score = score_val
+    # 1️⃣ Show relevance score (always from state.relevance_score)
+    if st.session_state.relevance_score is not None:
         st.subheader("📊 Relevance Score")
-        st.metric("Context Match", f"{score_val*100:.1f}%")
+        # normalize 1–5 scale to percentage
+        st.metric("Context Match", f"{st.session_state.relevance_score*20:.1f}%")
 
     # 2️⃣ Explanation + first quiz
     if not st.session_state.quiz_done and st.session_state.explanation and st.session_state.questions:
@@ -64,7 +53,7 @@ if "state" in st.session_state:
                 key=f"q{i}"
             )
             if selected:
-                learner_answers.append(selected)  # ✅ capture full option text
+                learner_answers.append(selected)  # full option text
 
         if st.button("Submit Answers"):
             st.session_state.state = run_checkpoint(
@@ -99,7 +88,7 @@ if "state" in st.session_state:
                     key=f"retry{i}"
                 )
                 if selected:
-                    retry_answers.append(selected)  # ✅ full option text again
+                    retry_answers.append(selected)
 
             if st.button("Submit Retry Answers"):
                 st.session_state.state = run_checkpoint(
