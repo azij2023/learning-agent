@@ -18,6 +18,8 @@ if "explanation" not in st.session_state:
     st.session_state.explanation = None
 if "questions" not in st.session_state:
     st.session_state.questions = None
+if "relevance_score" not in st.session_state:
+    st.session_state.relevance_score = None
 
 # Run agent once and reset flags
 if st.button("Run Agent"):
@@ -27,22 +29,26 @@ if st.button("Run Agent"):
     st.session_state.retry_done = False
     st.session_state.explanation = getattr(st.session_state.state, "explanation", None)
     st.session_state.questions = getattr(st.session_state.state, "questions", None)
+    st.session_state.relevance_score = getattr(st.session_state.state, "relevance_score", None)
 
 if "state" in st.session_state:
     state = st.session_state.state
 
     # 1️⃣ Show relevance score
+    score_val = None
     if hasattr(state, "relevance_score") and state.relevance_score is not None:
-        st.subheader("📊 Relevance Score")
-        st.metric("Context Match", f"{state.relevance_score*100:.1f}%")
+        score_val = state.relevance_score
     else:
         for msg in getattr(state, "messages", []):
-            if "context relevance score" in msg.lower():
-                match = re.search(r"context relevance score\s*=\s*\d+", msg, re.IGNORECASE)
-                if match:
-                    st.subheader("📊 Relevance Score")
-                    st.write(match.group(0))
+            match = re.search(r"relevance score\s*=\s*([0-9\.]+)", msg, re.IGNORECASE)
+            if match:
+                score_val = float(match.group(1))
                 break
+
+    if score_val is not None:
+        st.session_state.relevance_score = score_val
+        st.subheader("📊 Relevance Score")
+        st.metric("Context Match", f"{score_val*100:.1f}%")
 
     # 2️⃣ Explanation + first quiz
     if not st.session_state.quiz_done and st.session_state.explanation and st.session_state.questions:
