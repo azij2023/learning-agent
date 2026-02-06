@@ -10,6 +10,7 @@ def relevance_scorer(state: AgentState) -> AgentState:
     # If no context provided, skip scoring
     if not context:
         state.messages.append("RelevanceScorer: no context provided, skipping scoring")
+        state.relevance_score = None
         return state
 
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -33,5 +34,13 @@ Context:
     )
 
     score_text = response.choices[0].message.content.strip()
+
+    try:
+        score_val = float(score_text)
+    except ValueError:
+        # fallback if model returns something unexpected
+        score_val = None
+
+    state.relevance_score = score_val
     state.messages.append(f"RelevanceScorer: context relevance score = {score_text}")
     return state
