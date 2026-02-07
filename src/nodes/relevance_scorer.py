@@ -1,7 +1,7 @@
-# src/nodes/relevance_scorer.py
 from src.state import AgentState
-from groq import Groq
-import os
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
+from src.nodes.groq_llm import GroqLLM
 
 def relevance_scorer(state: AgentState) -> AgentState:
     topic = state.checkpoints[state.checkpoint_index]["topic"]
@@ -12,34 +12,23 @@ def relevance_scorer(state: AgentState) -> AgentState:
         state.relevance_score = None
         return state
 
-    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
-    prompt = f"""Evaluate how relevant the following context is to the topic "{topic}".
-Return only a numeric score between 1 and 5, where:
-1 = completely irrelevant
-3 = partially relevant
-5 = highly relevant and directly supports the topic.
+    llm = GroqLLM()
+    prompt = PromptTemplate.from_template(
+        """Evaluate how relevant the following context is to the topic "{topic}".
+Return only a numeric score between 1 and 5.
 
 Context:
-{context}
-"""
-
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[
-            {"role": "system", "content": "You are a strict relevance scorer."},
-            {"role": "user", "content": prompt}
-        ]
+{context}"""
     )
 
-    score_text = response.choices[0].message.content.strip()
+    chain = LLMChain(llm=llm, prompt=prompt)
+
+    result = chain.run({"topic": topic, "context": context}).strip()
 
     try:
-        score_val = float(score_text)
+        state.relevance_score = float(result)
     except ValueError:
-        score_val = None
+        state.relevance_score = None
 
-    # ✅ set numeric attribute
-    state.relevance_score = score_val
-    state.messages.append(f"RelevanceScorer: context relevance score = {score_text}")
+    state.messages.append(f"RelevanceScorer: context relevance score = {result}")
     return state
