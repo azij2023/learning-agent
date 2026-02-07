@@ -1,6 +1,6 @@
 from src.state import AgentState
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnableSequence
 from src.nodes.groq_llm import GroqLLM
 
 def relevance_scorer(state: AgentState) -> AgentState:
@@ -21,9 +21,11 @@ Context:
 {context}"""
     )
 
-    chain = LLMChain(llm=llm, prompt=prompt)
+    # ✅ Build a Runnable sequence instead of LLMChain
+    chain = RunnableSequence(prompt | llm)
 
-    result = chain.run({"topic": topic, "context": context}).strip()
+    # ✅ Run the chain
+    result = chain.invoke({"topic": topic, "context": context}).strip()
 
     try:
         state.relevance_score = float(result)
