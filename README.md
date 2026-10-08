@@ -2,7 +2,7 @@
 
 Learning Agent is an AI-assisted study app that turns a topic and optional notes into a beginner-friendly lesson and a multiple-choice quiz. Learners receive answer-by-answer feedback, a score, and—when their score is below 70%—a simpler explanation and another attempt.
 
-The project has a React frontend and a Python FastAPI backend. The backend runs a LangChain RunnableSequence and calls Groq for context, lesson, quiz, and remediation generation. The Groq API key stays on the server.
+The project has a React frontend and a Python FastAPI backend. The backend routes lesson generation and quiz scoring through a LangGraph `StateGraph`, with Groq used for context, lesson, quiz, and remediation generation. The Groq API key stays on the server.
 
 ## Interface
 
@@ -31,40 +31,66 @@ flowchart LR
     UI["React + Vite frontend"]
     API["FastAPI API"]
     Store["In-memory session store"]
-    Pipeline["LangChain RunnableSequence"]
+    subgraph Graph["LangGraph StateGraph"]
+        Route{"Action?"}
+        Define["Define checkpoint"]
+        Gather["Gather context"]
+        Validate["Validate context"]
+        Process["Process context"]
+        Explain["Explain topic"]
+        Quiz["Generate quiz"]
+        Verify["Verify answers"]
+        Decide{"Score >= 70%?"}
+        Feynman["Simpler explanation"]
+        Route -->|generate| Define --> Gather --> Validate --> Process --> Explain --> Quiz
+        Route -->|score| Verify --> Decide
+        Decide -->|yes| Complete["Complete"]
+        Decide -->|no| Feynman
+    end
     Groq["Groq API"]
 
     Learner --> UI
     UI -->|"JSON over /api"| API
-    API -->|"start session"| Pipeline
-    Pipeline --> Groq
-    Pipeline -->|"AgentState"| API
+    API -->|"generate action"| Route
+    API -->|"score action"| Route
+    Gather --> Groq
+    Validate --> Groq
+    Explain --> Groq
+    Quiz --> Groq
+    Feynman --> Groq
+    Quiz -->|"lesson and quiz"| API
+    Complete --> API
+    Feynman --> API
     API --> Store
-    UI -->|"submit answers / retry"| API
-    API -->|"score answers"| Store
     API -->|"lesson, quiz, score, feedback"| UI
 ```
 
 ### Learning workflow
 
-The initial lesson request runs the following nodes in order:
+`src/graph.py` defines and compiles the active LangGraph `StateGraph`. Its state carries the existing `AgentState` plus an action (`generate` or `score`). The graph branches at its start according to that action:
+
+**Lesson generation route**
 
 1. **Define checkpoint** — establishes the topic and checkpoint state.
 2. **Gather context** — uses learner notes, or asks Groq for a short background summary if no notes were entered.
 3. **Validate context** — compares the available context with the topic and stores a normalized relevance score.
 4. **Process context** — passes raw context through; embeddings are not currently used.
 5. **Explain topic** — asks Groq for a concise beginner-friendly Markdown lesson.
-6. **Generate questions** — asks Groq for five multiple-choice questions.
-7. **Verify and decide** — skips scoring until learner answers are submitted; scores submitted answers and applies the 70% threshold.
-8. **Feynman explanation** — generates a simpler explanation. The current initial sequence runs this node before answers are submitted; the low-score answer path also runs it to produce the remediation shown to the learner.
+6. **Generate questions** — asks Groq for five multiple-choice questions, then ends the graph run.
 
-The API stores the workflow state under a generated session ID. Submitting answers scores them against that session's existing quiz instead of generating a replacement quiz. A score of 70% or higher completes the session; a lower score returns remediation and keeps the retry available.
+**Answer scoring and remediation route**
+
+1. **Verify answers** — scores the answers against the quiz already stored in the session and creates per-question feedback.
+2. **Decide progression** — checks the 70% threshold. A passing score routes to the graph end.
+3. **Feynman explanation** — a score below 70% takes the conditional remediation edge, generates a simpler explanation, and then ends the graph run with the session ready for retry.
+
+The API stores the workflow state under a generated session ID. It invokes the same graph with the scoring action both for initial answers and retries. The retry currently reuses the session's existing questions rather than generating another quiz.
 
 ### Main components
 
 - **Frontend:** React 18, Vite, `react-markdown`, and `remark-gfm`.
 - **API:** FastAPI, Pydantic request validation, and Uvicorn.
-- **Agent workflow:** LangChain RunnableSequence with an `AgentState` shared between nodes.
+- **Agent workflow:** LangGraph `StateGraph` with action-based entry routing and a conditional score/remediation edge. Graph nodes adapt the existing `AgentState`-mutating node functions into LangGraph state updates.
 - **Model provider:** Groq Chat Completions. Current code uses `openai/gpt-oss-20b` for automatic context gathering and `openai/gpt-oss-120b` for relevance scoring, lessons, quizzes, and remediation.
 
 ## Repository layout
@@ -78,9 +104,8 @@ The API stores the workflow state under a generated session ID. Submitting answe
 ├── src/
 │   ├── main.py                    # Workflow entry point and answer-scoring flow
 │   ├── state.py                   # AgentState shared by workflow nodes
-│   ├── graph.py                   # LangGraph graph builder (not used by the API path)
+│   ├── graph.py                   # Active LangGraph StateGraph and routing
 │   └── nodes/
-│       ├── runnables.py           # Active LangChain RunnableSequence
 │       ├── define_checkpoint.py   # Initialize current topic/checkpoint
 │       ├── gather_context.py      # Use notes or generate background context
 │       ├── validate_context.py    # Relevance-scoring entry point
@@ -232,7 +257,7 @@ Deploy the frontend and backend as separate services:
 3. Set `GROQ_API_KEY` in the backend environment, and set `LEARNING_AGENT_CORS_ORIGINS` to the frontend's exact HTTPS origin.
 4. Set `VITE_API_BASE_URL` to the backend's public URL at frontend build time, then rebuild the frontend.
 
-The API currently keeps sessions in process memory. Sessions are lost when the backend restarts, and separate workers or instances do not share state. Replace this with shared persistent storage before running multiple workers or scaling horizontally.
+The API currently keeps sessions in process memory and does not configure a LangGraph checkpointer. Sessions are lost when the backend restarts, and separate workers or instances do not share state. Add shared persistent storage and a compatible LangGraph checkpointer before running multiple workers or scaling horizontally.
 
 ## Troubleshooting
 
@@ -248,6 +273,6 @@ The API currently keeps sessions in process memory. Sessions are lost when the b
 - The API does not persist user accounts, sessions, or lesson history.
 - Context processing currently passes raw text through; embeddings and retrieval are not implemented.
 - The retry flow reuses the session's current quiz rather than generating a new set of questions.
-- The initial lesson sequence currently calls the Feynman node before the learner submits answers, then calls it again after a low score. Only the low-score explanation is shown as remediation.
+- The LangGraph workflow currently runs in-process; it does not persist graph checkpoints or session state across backend restarts.
 - The app depends on Groq availability, API credentials, and access to the configured models.
 - Model-generated explanations and questions should be reviewed for accuracy before being used as authoritative study material.
