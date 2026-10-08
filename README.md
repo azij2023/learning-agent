@@ -263,21 +263,51 @@ Use the retry endpoint with the same request shape while the session phase is `r
 
 For a local setup using a different frontend port, add that exact origin to `LEARNING_AGENT_CORS_ORIGINS`. For a deployed frontend and backend on separate domains, configure both the backend CORS allowlist and the frontend `VITE_API_BASE_URL`.
 
-## Deployment notes
+## Deploy with Render and Vercel
 
-Deploy the frontend and backend as separate services:
+Deploy the Python API on Render and the Vite frontend on Vercel. The repository includes [`render.yaml`](./render.yaml) to configure the Render API service. The Groq key must stay on Render; `VITE_*` variables are included in the browser build and must never contain secrets.
 
-1. Build `frontend` with `npm ci` and `npm run build`, then host the contents of `frontend/dist/` as a static site.
-2. Run the repository root as a Python ASGI service, for example:
+### 1. Create the backend on Render
 
-   ```text
-   python -m uvicorn api:app --host 0.0.0.0 --port 8000
-   ```
+1. Push this repository to GitHub.
+2. In the [Render Dashboard](https://dashboard.render.com/), choose **New** → **Blueprint** and connect `azij2023/learning-agent`.
+3. Render reads `render.yaml` and creates the `learning-agent-api` web service. Enter your Groq key when prompted for `GROQ_API_KEY`.
+4. Wait for the first deployment to finish. Copy the service URL, for example `https://learning-agent-api.onrender.com`.
+5. Check that `https://<your-render-service>.onrender.com/api/health` returns `{"status":"ok"}`.
 
-3. Set `GROQ_API_KEY` in the backend environment, and set `LEARNING_AGENT_CORS_ORIGINS` to the frontend's exact HTTPS origin.
-4. Set `VITE_API_BASE_URL` to the backend's public URL at frontend build time, then rebuild the frontend.
+The blueprint starts the API with Uvicorn, installs `requirements.txt`, and uses `/api/health` as its health check.
 
-The API currently keeps sessions in process memory and does not configure a LangGraph checkpointer. Sessions are lost when the backend restarts, and separate workers or instances do not share state. Add shared persistent storage and a compatible LangGraph checkpointer before running multiple workers or scaling horizontally.
+### 2. Deploy the frontend on Vercel
+
+1. In the [Vercel Dashboard](https://vercel.com/dashboard), choose **Add New** → **Project**, import the same GitHub repository, and configure:
+   - **Root Directory:** `frontend`
+   - **Framework Preset:** Vite (usually detected automatically)
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+2. In the Vercel project's **Settings** → **Environment Variables**, add:
+   - **Name:** `VITE_API_BASE_URL`
+   - **Value:** your Render API URL, e.g. `https://learning-agent-api.onrender.com` (no trailing slash)
+   - **Environments:** Production; also select Preview if you plan to test preview deployments
+3. Deploy or redeploy the Vercel project. Vite reads `VITE_API_BASE_URL` at build time.
+4. Copy the production frontend origin, e.g. `https://learning-agent.vercel.app` (origin only; no path or trailing slash).
+
+### 3. Allow the Vercel site through Render CORS
+
+1. In Render, open the API service's **Environment** settings.
+2. Set `LEARNING_AGENT_CORS_ORIGINS` to the Vercel production origin, for example `https://learning-agent.vercel.app`.
+3. If you also need Vercel preview deployments to call the API, add their exact origins as a comma-separated list, for example `https://learning-agent-git-main-example.vercel.app,https://learning-agent.vercel.app`.
+4. Save the change and wait for Render to redeploy.
+
+Only add trusted frontend origins; do not use `*` for the CORS allowlist. The initial value in `render.yaml` is for local development and must be replaced with the deployed Vercel origin.
+
+### 4. Verify the deployment
+
+- Open the Vercel production URL and start a lesson.
+- Verify the API health endpoint at `https://<your-render-service>.onrender.com/api/health`.
+- If the page reports a network/CORS error, confirm `VITE_API_BASE_URL` is the Render URL and `LEARNING_AGENT_CORS_ORIGINS` exactly matches the Vercel origin. After changing a Vercel environment variable, redeploy Vercel; after changing a Render variable, wait for the backend redeploy.
+- Keep `GROQ_API_KEY` only in Render's backend environment. Never add it to Vercel or a `VITE_*` variable.
+
+The API currently keeps sessions in process memory and does not configure a LangGraph checkpointer. Sessions are lost when the backend restarts, and separate workers or instances do not share state. Some hosting plans may stop idle services, causing a restart and loss of active sessions. Add shared persistent storage and a compatible LangGraph checkpointer before running multiple workers or scaling horizontally.
 
 ## Troubleshooting
 
