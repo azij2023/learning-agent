@@ -6,6 +6,20 @@ The project has a React frontend and a Python FastAPI backend. The backend route
 
 ## Interface
 
+### Home page
+
+![Learning Agent home page](./home.png)
+
+### Lesson and quiz
+
+![Generated lesson and knowledge-check quiz](./lesson.png)
+
+### Retry and simpler explanation
+
+![Retry quiz and Feynman explanation](./tryagain.png)
+
+### Dark theme
+
 ![Learning Agent landing page in dark mode](./learning-agent-interface.png)
 
 The responsive interface also includes a lesson view, quiz progress and review, context-match score, reading progress, light/dark themes, and controls to copy or download lesson notes.
