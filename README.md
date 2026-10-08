@@ -6,6 +6,10 @@ The project has a React frontend and a Python FastAPI backend. The backend route
 
 ## Interface
 
+### Home page
+
+![Learning Agent home page](./home.png)
+
 ### Lesson and quiz
 
 ![Generated lesson and knowledge-check quiz](./lesson.png)
@@ -114,6 +118,7 @@ The `/api/sessions` endpoint invokes the graph with `action="generate"` and stor
 ├── api.py                         # FastAPI endpoints and in-memory sessions
 ├── requirements.txt               # Python dependencies
 ├── README.md
+├── home.png                       # Current light-only home-page screenshot
 ├── lesson.png                     # Lesson and quiz screenshot
 ├── tryagain.png                   # Retry and simpler explanation screenshot
 ├── src/
