@@ -1,7 +1,6 @@
 from src.state import AgentState
-from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnableSequence
-from src.nodes.groq_llm import GroqLLM
+from groq import Groq
+import os
 
 def relevance_scorer(state: AgentState) -> AgentState:
     topic = state.checkpoints[state.checkpoint_index]["topic"]
@@ -12,23 +11,27 @@ def relevance_scorer(state: AgentState) -> AgentState:
         state.relevance_score = None
         return state
 
-    llm = GroqLLM()
-    prompt = PromptTemplate.from_template(
-        """Evaluate how relevant the following context is to the topic "{topic}".
-Return only a numeric score between 1 and 5.
-
-Context:
-{context}"""
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-120b",
+        messages=[
+            {
+                "role": "system",
+                "content": "Rate context relevance from 1 to 5. Return only a numeric score.",
+            },
+            {
+                "role": "user",
+                "content": f'Topic: "{topic}"\n\nContext:\n{context}',
+            },
+        ],
     )
-
-    # ✅ Build a Runnable sequence instead of LLMChain
-    chain = RunnableSequence(prompt | llm)
-
-    # ✅ Run the chain
-    result = chain.invoke({"topic": topic, "context": context}).strip()
+    result = response.choices[0].message.content.strip()
 
     try:
-        state.relevance_score = float(result)
+        score = float(result)
+        if not 1 <= score <= 5:
+            raise ValueError("Relevance score must be between 1 and 5")
+        state.relevance_score = score / 5
     except ValueError:
         state.relevance_score = None
 

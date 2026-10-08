@@ -8,11 +8,11 @@ class GroqLLM(BaseLanguageModel):
 
     def _call(self, prompt, stop=None):
         response = self.client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content.strip()
 
     @property
     def _identifying_params(self):
-        return {"model": "llama-3.1-8b-instant"}
+        return {"model": "openai/gpt-oss-120b"}

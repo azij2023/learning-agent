@@ -27,7 +27,7 @@ Focus on definitions, key concepts, and examples that would help a learner under
 """
 
     response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",  # fast model for context fetching
+        model="openai/gpt-oss-20b",
         messages=[
             {"role": "system", "content": "You are a helpful context gatherer."},
             {"role": "user", "content": prompt}

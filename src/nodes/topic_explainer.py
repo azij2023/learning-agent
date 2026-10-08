@@ -10,20 +10,28 @@ def topic_explainer(state: AgentState) -> AgentState:
 
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-    prompt = f"""Explain the topic "{topic}" clearly for a beginner.
-Use this context if helpful:
-{context}
-Keep it under 300 words, structured, and easy to understand."""
+    prompt = f"""Teach "{topic}" to a beginner in a clear, accurate, self-contained lesson.
+
+Use the supplied context as supporting information, but correct obvious errors and do not invent facts:
+{context or "(No additional context supplied.)"}
+
+Use readable Markdown with a short title, descriptive headings, short paragraphs, and bullet lists.
+Explain key terms in plain language and include a concrete example or analogy.
+Do not use Markdown tables. Do not include literal Markdown syntax as quoted text.
+Keep the lesson focused and under 350 words."""
 
     response = client.chat.completions.create(
-    model="llama-3.3-70b-versatile",  
-    messages=[
-        {"role": "system", "content": "You are a helpful tutor."},
-        {"role": "user", "content": prompt}
-    ]
+        model="openai/gpt-oss-120b",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a patient, accurate tutor. Return a polished Markdown lesson, not instructions about how to write one.",
+            },
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.3,
     )
 
-
-    state.explanation = response.choices[0].message.content
+    state.explanation = (response.choices[0].message.content or "").strip()
     state.messages.append(f"TopicExplainer: explained {topic} with Groq")
     return state
