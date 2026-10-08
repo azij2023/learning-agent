@@ -12,9 +12,6 @@
   --line: #e7e9f0;
   --violet: #6858d9;
   --violet-dark: #5142bf;
-}
-
-:root {
   --page-bg: #f7f8fc;
   --surface: #fff;
   --surface-raised: #fbfbfd;
@@ -22,23 +19,9 @@
   --card-shadow: 0 12px 38px #31374a0b;
 }
 
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --ink: #f1f2fb;
-  --muted: #a3aabc;
-  --line: #34394b;
-  --violet: #a99cff;
-  --violet-dark: #c1b7ff;
-  --page-bg: #11131b;
-  --surface: #1a1d27;
-  --surface-raised: #222635;
-  --surface-soft: #282b3a;
-  --card-shadow: 0 12px 38px #00000020;
-}
-
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--page-bg); transition: background .2s, color .2s; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--page-bg); }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 
@@ -50,8 +33,6 @@ button { cursor: pointer; }
 .topbar-actions { display: flex; gap: 24px; align-items: center; }
 .topbar-note { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
 .status-dot, .eyebrow span { width: 8px; height: 8px; border-radius: 50%; background: #67c3a1; }
-.theme-button { display: grid; place-items: center; width: 37px; height: 37px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font-size: 18px; transition: .15s; }
-.theme-button:hover { border-color: #c7c0f1; color: var(--violet); transform: rotate(-8deg); }
 .text-button { padding: 9px 13px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font-weight: 600; transition: .15s; }
 .text-button:hover, .secondary-button:hover { border-color: #c7c0f1; background: #f9f8ff; color: var(--violet-dark); }
 
@@ -203,31 +184,6 @@ footer { padding: 22px 0 28px; color: #9b9faf; text-align: center; font-size: 12
 .lesson-actions { display: flex; gap: 7px; }
 .lesson-action { min-height: 33px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--muted); font-size: 11px; font-weight: 600; transition: .15s; }
 .lesson-action:hover { border-color: #c7c0f1; color: var(--violet); background: var(--surface-soft); }
-
-:root[data-theme="dark"] .session-badge { border-color: #47405f; background: #242033; color: #c1b7ff; }
-:root[data-theme="dark"] .option:hover { border-color: #686083; background: #282538; }
-:root[data-theme="dark"] .review-item { border-left-color: #54c18d; }
-:root[data-theme="dark"] .review-incorrect { border-left-color: #e5b552; background: #2b261b; }
-:root[data-theme="dark"] .review-status span { background: #1c372b; }
-:root[data-theme="dark"] .review-incorrect .review-status span { background: #493718; }
-:root[data-theme="dark"] .review-score { background: #1c372b; color: #72d2a0; }
-:root[data-theme="dark"] .review-score span { color: #a5c9b5; }
-:root[data-theme="dark"] .review-score-low { background: #493718; color: #f0c46e; }
-:root[data-theme="dark"] .needs-practice { border-color: #65502b; background: #292318; }
-:root[data-theme="dark"] .needs-practice .score-number { color: #f0c46e; }
-:root[data-theme="dark"] .passed { border-color: #315a47; background: #192820; }
-:root[data-theme="dark"] .passed .score-number { color: #72d2a0; }
-:root[data-theme="dark"] .feynman-card { border-color: #47405f; background: #201e2b; }
-:root[data-theme="dark"] .error-alert { border-color: #663d48; background: #321f27; color: #ffadb9; }
-:root[data-theme="dark"] .progress-step.complete .step-marker { border-color: #514872; background: #29253b; }
-:root[data-theme="dark"] .progress-step.active .step-marker { background: var(--violet); color: #181425; }
-:root[data-theme="dark"] .prose code { background: #302b45; color: #c1b7ff; }
-:root[data-theme="dark"] .prose pre { background: #222635; }
-:root[data-theme="dark"] .prose th { background: #25283a; }
-:root[data-theme="dark"] .prose th, :root[data-theme="dark"] .prose td { border-color: var(--line); }
-:root[data-theme="dark"] .prose strong { color: #f1f2fb; }
-:root[data-theme="dark"] .suggestion-chip:hover { background: #282538; }
-:root[data-theme="dark"] .option.selected .option-letter { color: #181425; }
 
 @media (max-width: 950px) {
   .welcome-grid { grid-template-columns: minmax(0, 1fr) minmax(340px, .9fr); gap: 32px; }

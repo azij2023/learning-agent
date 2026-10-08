@@ -15,14 +15,6 @@ function FormattedExplanation({ children }) {
   );
 }
 
-function getSavedTheme() {
-  try {
-    return window.localStorage.getItem("learning-agent-theme") === "dark" ? "dark" : "light";
-  } catch {
-    return "light";
-  }
-}
-
 function LearningAgent() {
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
@@ -30,18 +22,8 @@ function LearningAgent() {
   const [answers, setAnswers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [theme, setTheme] = useState(getSavedTheme);
   const [readingProgress, setReadingProgress] = useState(0);
   const [copyStatus, setCopyStatus] = useState("");
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    try {
-      window.localStorage.setItem("learning-agent-theme", theme);
-    } catch {
-      // Theme still works for this page view when browser storage is unavailable.
-    }
-  }, [theme]);
 
   useEffect(() => {
     function updateReadingProgress() {
@@ -153,7 +135,7 @@ function LearningAgent() {
   }
 
   return (
-    <main className="page-shell" data-theme={theme}>
+    <main className="page-shell">
       {session && (
         <div
           className="reading-progress"
@@ -172,15 +154,6 @@ function LearningAgent() {
         </a>
         <div className="topbar-actions">
           <span className="topbar-note"><span className="status-dot" /> Your personal AI tutor</span>
-          <button
-            className="theme-button"
-            type="button"
-            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
-            title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
-            onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}
-          >
-            <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
-          </button>
           {session && <button className="text-button" onClick={startNewLesson}>＋ New lesson</button>}
         </div>
       </header>

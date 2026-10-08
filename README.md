@@ -6,10 +6,6 @@ The project has a React frontend and a Python FastAPI backend. The backend route
 
 ## Interface
 
-### Home page
-
-![Learning Agent home page](./home.png)
-
 ### Lesson and quiz
 
 ![Generated lesson and knowledge-check quiz](./lesson.png)
@@ -18,11 +14,7 @@ The project has a React frontend and a Python FastAPI backend. The backend route
 
 ![Retry quiz and Feynman explanation](./tryagain.png)
 
-### Dark theme
-
-![Learning Agent landing page in dark mode](./learning-agent-interface.png)
-
-The responsive interface also includes a lesson view, quiz progress and review, context-match score, reading progress, light/dark themes, and controls to copy or download lesson notes.
+The responsive interface also includes a lesson view, quiz progress and review, context-match score, reading progress, and controls to copy or download lesson notes.
 
 ## Features
 
@@ -34,7 +26,6 @@ The responsive interface also includes a lesson view, quiz progress and review, 
 - Score answers against the quiz already shown and review each response.
 - Offer a simpler explanation and another quiz attempt when the score is below 70%.
 - Track the current learning stage and page-reading progress.
-- Switch between light and dark themes; remember the selection in browser storage.
 - Copy lesson notes to the clipboard or download them as a Markdown file.
 
 ## Architecture
@@ -81,9 +72,16 @@ flowchart LR
 
 ### Learning workflow
 
-`src/graph.py` defines and compiles the active LangGraph `StateGraph`. Its state carries the existing `AgentState` plus an action (`generate` or `score`). The graph branches at its start according to that action:
+`src/graph.py` defines and compiles the active LangGraph `StateGraph`. LangGraph runs each node with a shared state and follows the graph's edges; this lets the app share lesson and quiz data across steps and route quiz results conditionally instead of hard-coding every step into a linear chain.
 
-**Lesson generation route**
+The graph state contains:
+
+- `agent_state` — the existing `AgentState`, holding the topic/checkpoint, learner context, context relevance, lesson, quiz, submitted answers, feedback, score, retry flag, and messages.
+- `action` — either `generate` or `score`, selecting which part of the graph should run for the current API request.
+
+At invocation, a conditional edge from LangGraph's `START` selects the route based on `action`. The graph wraps the existing node functions with a small adapter: each function receives the nested `AgentState`, updates it, and returns it as a LangGraph state update.
+
+### Lesson generation route
 
 1. **Define checkpoint** — establishes the topic and checkpoint state.
 2. **Gather context** — uses learner notes, or asks Groq for a short background summary if no notes were entered.
@@ -92,13 +90,15 @@ flowchart LR
 5. **Explain topic** — asks Groq for a concise beginner-friendly Markdown lesson.
 6. **Generate questions** — asks Groq for five multiple-choice questions, then ends the graph run.
 
-**Answer scoring and remediation route**
+### Answer scoring and remediation route
 
 1. **Verify answers** — scores the answers against the quiz already stored in the session and creates per-question feedback.
 2. **Decide progression** — checks the 70% threshold. A passing score routes to the graph end.
 3. **Feynman explanation** — a score below 70% takes the conditional remediation edge, generates a simpler explanation, and then ends the graph run with the session ready for retry.
 
 The API stores the workflow state under a generated session ID. It invokes the same graph with the scoring action both for initial answers and retries. The retry currently reuses the session's existing questions rather than generating another quiz.
+
+The `/api/sessions` endpoint invokes the graph with `action="generate"` and stores the resulting `AgentState`. The answer and retry endpoints retrieve that state, set the submitted answers, and invoke the graph with `action="score"`. The graph ends after generating questions, after a passing score, or after producing remediation for a low score. The API then serializes the updated state for the React interface.
 
 ### Main components
 
@@ -114,7 +114,8 @@ The API stores the workflow state under a generated session ID. It invokes the s
 ├── api.py                         # FastAPI endpoints and in-memory sessions
 ├── requirements.txt               # Python dependencies
 ├── README.md
-├── learning-agent-interface.png   # UI screenshot used above
+├── lesson.png                     # Lesson and quiz screenshot
+├── tryagain.png                   # Retry and simpler explanation screenshot
 ├── src/
 │   ├── main.py                    # Workflow entry point and answer-scoring flow
 │   ├── state.py                   # AgentState shared by workflow nodes
@@ -133,7 +134,7 @@ The API stores the workflow state under a generated session ID. It invokes the s
 └── frontend/
     ├── index.html                # Vite HTML entry point
     ├── src.jsx                   # React app and API interactions
-    ├── style.css                 # Responsive layout and themes
+    ├── style.css                 # Responsive light-theme layout
     ├── vite.config.js            # Development API proxy
     ├── package.json
     └── package-lock.json
