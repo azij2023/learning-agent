@@ -1,4 +1,4 @@
-name: Deploy app to GitHub Pages
+name: Deploy frontend to GitHub Pages
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
         working-directory: frontend
       - name: Build frontend
         env:
-          VITE_API_BASE_URL: https://learning-agent-api-49cq.onrender.com
+          VITE_DEMO_MODE: "true"
           PAGES_BASE_PATH: /${{ github.event.repository.name }}/
         run: npm run build -- --base "$PAGES_BASE_PATH"
         working-directory: frontend

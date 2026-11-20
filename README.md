@@ -259,6 +259,7 @@ Use the retry endpoint with the same request shape while the session phase is `r
 | `GROQ_API_KEY` | Backend | Required Groq API key. Keep it server-side. |
 | `LEARNING_AGENT_CORS_ORIGINS` | Backend | Comma-separated allowed browser origins. Defaults to `http://localhost:5173`. |
 | `VITE_API_BASE_URL` | Frontend build | Optional API base URL for a separately hosted backend. Empty by default, so requests are relative to the frontend origin. |
+| `VITE_DEMO_MODE` | Frontend build | Set to `true` only for the GitHub Pages sample; uses prepared lessons and browser-side quiz scoring. |
 | `VITE_API_PROXY_TARGET` | Vite dev server | Optional backend URL for development proxying. Defaults to `http://localhost:8000`. |
 
 For a local setup using a different frontend port, add that exact origin to `LEARNING_AGENT_CORS_ORIGINS`. For a deployed frontend and backend on separate domains, configure both the backend CORS allowlist and the frontend `VITE_API_BASE_URL`.
@@ -309,16 +310,13 @@ Only add trusted frontend origins; do not use `*` for the CORS allowlist. The in
 
 The API currently keeps sessions in process memory and does not configure a LangGraph checkpointer. Sessions are lost when the backend restarts, and separate workers or instances do not share state. Some hosting plans may stop idle services, causing a restart and loss of active sessions. Add shared persistent storage and a compatible LangGraph checkpointer before running multiple workers or scaling horizontally.
 
-## Deploy the frontend to GitHub Pages
+## GitHub Pages sample
 
-GitHub Pages hosts the frontend only; the Python API and Groq model calls continue to run on Render. The [GitHub Actions workflow](./.github/workflows/deploy-pages.yml) builds the real API-connected frontend and deploys it to `https://azij2023.github.io/learning-agent/` whenever `main` is updated.
+The [GitHub Pages site](https://azij2023.github.io/learning-agent/) is a standalone, interactive sample of the learning flow. Its [deployment workflow](./.github/workflows/deploy-pages.yml) builds the Vite frontend with `VITE_DEMO_MODE=true` and publishes it on every push to `main`. It needs no server, Groq key, account, or other hosting provider.
 
-1. In the GitHub repository, open **Settings** → **Pages** and set **Build and deployment → Source** to **GitHub Actions**.
-2. Ensure the Render API is available at `https://learning-agent-api-49cq.onrender.com/api/health`.
-3. In Render, set `LEARNING_AGENT_CORS_ORIGINS` to include `https://azij2023.github.io`. Keep any other frontend origins you use, such as the Vercel site, as comma-separated entries.
-4. Push to `main`, then check the **Actions** tab for **Deploy app to GitHub Pages**. Once it succeeds, open `https://azij2023.github.io/learning-agent/`.
+Choose one of the four sample topics shown on the page. [Prepared lesson and quiz data](./frontend/demo.js) let you read a lesson, answer five questions, see a score and answer feedback, and retry after a score below 70%. Scoring happens in the browser. The page labels itself as a sample so visitors do not mistake its content for AI-generated lessons. Custom topics and notes are available only in the full Render/Vercel app.
 
-The workflow sets the public Render API URL at frontend build time. It is not a secret. Keep `GROQ_API_KEY` only in Render; GitHub Pages cannot host the Python backend or protect server credentials.
+GitHub Pages is already configured to deploy from GitHub Actions. To rebuild the sample, push to `main` or run **Deploy frontend to GitHub Pages** from the **Actions** tab. The workflow builds with the `/learning-agent/` asset path required by this repository's Pages URL.
 
 ## Troubleshooting
 
