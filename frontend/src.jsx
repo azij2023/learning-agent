@@ -177,7 +177,7 @@ function LearningAgent() {
               ? "Explore a prepared lesson, check your understanding, and try again with a simpler explanation."
               : "Your AI tutor turns any topic into a clear lesson, then helps you check what you’ve learned. No pressure—just progress."}</p>
             <div className="hero-points">
-              <div><span className="point-icon">✦</span><span><strong>Learn your way</strong><small>Add your notes or start from scratch</small></span></div>
+              <div><span className="point-icon">✦</span><span><strong>Learn your way</strong><small>{DEMO_MODE ? "Explore four prepared topics" : "Add your notes or start from scratch"}</small></span></div>
               <div><span className="point-icon">✓</span><span><strong>Build confidence</strong><small>Quick quizzes make progress visible</small></span></div>
               <div><span className="point-icon">↻</span><span><strong>Try again, differently</strong><small>Get a simpler explanation whenever needed</small></span></div>
             </div>
