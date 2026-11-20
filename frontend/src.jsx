@@ -148,7 +148,7 @@ function LearningAgent() {
         />
       )}
       <header className="topbar">
-        <a className="brand" href="/" aria-label="Learning Agent home">
+        <a className="brand" href={import.meta.env.BASE_URL} aria-label="Learning Agent home">
           <span className="brand-mark">L</span>
           <span>Learning Agent</span>
         </a>

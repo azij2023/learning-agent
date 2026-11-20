@@ -309,6 +309,17 @@ Only add trusted frontend origins; do not use `*` for the CORS allowlist. The in
 
 The API currently keeps sessions in process memory and does not configure a LangGraph checkpointer. Sessions are lost when the backend restarts, and separate workers or instances do not share state. Some hosting plans may stop idle services, causing a restart and loss of active sessions. Add shared persistent storage and a compatible LangGraph checkpointer before running multiple workers or scaling horizontally.
 
+## Deploy the frontend to GitHub Pages
+
+GitHub Pages hosts the frontend only; the Python API and Groq model calls continue to run on Render. The [GitHub Actions workflow](./.github/workflows/deploy-pages.yml) builds the real API-connected frontend and deploys it to `https://azij2023.github.io/learning-agent/` whenever `main` is updated.
+
+1. In the GitHub repository, open **Settings** → **Pages** and set **Build and deployment → Source** to **GitHub Actions**.
+2. Ensure the Render API is available at `https://learning-agent-api-49cq.onrender.com/api/health`.
+3. In Render, set `LEARNING_AGENT_CORS_ORIGINS` to include `https://azij2023.github.io`. Keep any other frontend origins you use, such as the Vercel site, as comma-separated entries.
+4. Push to `main`, then check the **Actions** tab for **Deploy app to GitHub Pages**. Once it succeeds, open `https://azij2023.github.io/learning-agent/`.
+
+The workflow sets the public Render API URL at frontend build time. It is not a secret. Keep `GROQ_API_KEY` only in Render; GitHub Pages cannot host the Python backend or protect server credentials.
+
 ## Troubleshooting
 
 - **`ModuleNotFoundError` while starting the API:** Activate the intended Conda environment, then run `python -m pip install -r requirements.txt` in that same environment.

@@ -10,4 +10,4 @@ services:
       - key: GROQ_API_KEY
         sync: false
       - key: LEARNING_AGENT_CORS_ORIGINS
-        value: http://localhost:5173
+        value: http://localhost:5173,https://learning-agent-xi.vercel.app,https://azij2023.github.io
