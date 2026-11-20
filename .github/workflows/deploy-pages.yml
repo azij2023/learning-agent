@@ -29,9 +29,13 @@ jobs:
         working-directory: frontend
       - name: Build frontend
         env:
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_API_BASE_URL: ${{ vars.GITHUB_PAGES_API_BASE_URL }}
           PAGES_BASE_PATH: /${{ github.event.repository.name }}/
-        run: npm run build -- --base "$PAGES_BASE_PATH"
+        run: |
+          if [ -z "$VITE_API_BASE_URL" ]; then
+            echo "::warning::Set GITHUB_PAGES_API_BASE_URL to the dedicated backend origin to enable lessons."
+          fi
+          npm run build -- --base "$PAGES_BASE_PATH"
         working-directory: frontend
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

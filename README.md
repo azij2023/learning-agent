@@ -259,13 +259,14 @@ Use the retry endpoint with the same request shape while the session phase is `r
 | `GROQ_API_KEY` | Backend | Required Groq API key. Keep it server-side. |
 | `LEARNING_AGENT_CORS_ORIGINS` | Backend | Comma-separated allowed browser origins. Defaults to `http://localhost:5173`. |
 | `VITE_API_BASE_URL` | Frontend build | Optional API base URL for a separately hosted backend. Empty by default, so requests are relative to the frontend origin. |
+| `GITHUB_PAGES_API_BASE_URL` | GitHub Actions repository variable | Public Koyeb API origin used only by the GitHub Pages build. The workflow passes it to Vite as `VITE_API_BASE_URL`. |
 | `VITE_API_PROXY_TARGET` | Vite dev server | Optional backend URL for development proxying. Defaults to `http://localhost:8000`. |
 
 For a local setup using a different frontend port, add that exact origin to `LEARNING_AGENT_CORS_ORIGINS`. For a deployed frontend and backend on separate domains, configure both the backend CORS allowlist and the frontend `VITE_API_BASE_URL`.
 
-## Deploy with Render, Vercel, and GitHub Pages
+## Deploy with Render and Vercel
 
-Deploy the Python API on Render and the Vite frontend on Vercel and GitHub Pages. The repository includes [`render.yaml`](./render.yaml) to configure the Render API service and [`.github/workflows/deploy-pages.yml`](./.github/workflows/deploy-pages.yml) to publish an additional frontend build to GitHub Pages. The Groq key must stay on Render; `VITE_*` variables are included in the browser build and must never contain secrets.
+Deploy the Python API on Render and the Vite frontend on Vercel. The repository includes [`render.yaml`](./render.yaml) to configure the Render API service. The Groq key must stay on Render; `VITE_*` variables are included in the browser build and must never contain secrets.
 
 ### 1. Create the backend on Render
 
@@ -291,30 +292,35 @@ The blueprint starts the API with Uvicorn, installs `requirements.txt`, and uses
 3. Deploy or redeploy the Vercel project. Vite reads `VITE_API_BASE_URL` at build time.
 4. Copy the production frontend origin, e.g. `https://learning-agent.vercel.app` (origin only; no path or trailing slash).
 
-### 3. Deploy the frontend on GitHub Pages
-
-1. In the GitHub repository, open **Settings** → **Pages** and set **Build and deployment** → **Source** to **GitHub Actions**.
-2. Open **Settings** → **Secrets and variables** → **Actions** → **Variables** and add `VITE_API_BASE_URL` with the Render API origin, for example `https://learning-agent-api.onrender.com` (no trailing slash). This URL is public; do not enter `GROQ_API_KEY` here.
-3. Push to `main` or run **Deploy frontend to GitHub Pages** from the **Actions** tab. The workflow builds with the repository's Pages path and publishes `frontend/dist`.
-4. The site URL for this repository is `https://azij2023.github.io/learning-agent/`. If the repository name changes, the workflow adapts the build path to the new name.
-
-### 4. Allow both frontend origins through Render CORS
+### 3. Allow the Vercel origin through Render CORS
 
 1. In Render, open the API service's **Environment** settings.
-2. Set `LEARNING_AGENT_CORS_ORIGINS` to both production origins, separated by a comma, for example `https://learning-agent.vercel.app,https://azij2023.github.io`. Use the origin only: the GitHub Pages `/learning-agent/` path is not part of the CORS origin.
+2. Set `LEARNING_AGENT_CORS_ORIGINS` to the Vercel production origin, for example `https://learning-agent.vercel.app`.
 3. If you also need Vercel preview deployments to call the API, add their exact origins to the same comma-separated list.
 4. Save the change and wait for Render to redeploy.
 
-Only add trusted frontend origins; do not use `*` for the CORS allowlist. The initial value in `render.yaml` is for local development and must be replaced with the deployed frontend origins.
+Only add trusted frontend origins; do not use `*` for the CORS allowlist. The initial value in `render.yaml` is for local development and must be replaced with the deployed Vercel origin.
 
-### 5. Verify the deployments
+### 4. Verify the deployment
 
-- Open the Vercel and GitHub Pages production URLs and start a lesson on each.
+- Open the Vercel production URL and start a lesson.
 - Verify the API health endpoint at `https://<your-render-service>.onrender.com/api/health`.
-- If either page reports a network/CORS error, confirm its `VITE_API_BASE_URL` is the Render URL and `LEARNING_AGENT_CORS_ORIGINS` contains both frontend origins. After changing a frontend build variable, redeploy that frontend; after changing a Render variable, wait for the backend redeploy.
+- If the page reports a network/CORS error, confirm its `VITE_API_BASE_URL` is the Render URL and `LEARNING_AGENT_CORS_ORIGINS` contains the Vercel origin. After changing a Vercel build variable, redeploy Vercel; after changing a Render variable, wait for the backend redeploy.
 - Keep `GROQ_API_KEY` only in Render's backend environment. Never add it to Vercel or a `VITE_*` variable.
 
 The API currently keeps sessions in process memory and does not configure a LangGraph checkpointer. Sessions are lost when the backend restarts, and separate workers or instances do not share state. Some hosting plans may stop idle services, causing a restart and loss of active sessions. Add shared persistent storage and a compatible LangGraph checkpointer before running multiple workers or scaling horizontally.
+
+## Deploy the separate GitHub version
+
+GitHub Pages hosts the frontend at `https://azij2023.github.io/learning-agent/`. A separate FastAPI service on Koyeb handles its lesson and quiz requests. This service has its own sessions and `GROQ_API_KEY`; it does not call the Render API used by Vercel. GitHub Pages cannot run the Python backend itself.
+
+1. In [Koyeb](https://app.koyeb.com/), create a **Web Service** from `azij2023/learning-agent` on `main`. Choose **Dockerfile** as the builder and set its location to `Dockerfile.github-api`. Expose port `8000` as HTTP with the `/` route. The image defaults `LEARNING_AGENT_CORS_ORIGINS` to `https://azij2023.github.io`.
+2. Add `GROQ_API_KEY` as a Koyeb secret/environment variable. Do not put it in GitHub Actions variables or in the frontend build. Deploy the service and check `https://<your-koyeb-domain>/api/health` for `{"status":"ok"}`.
+3. In the GitHub repository, set **Settings** → **Pages** → **Build and deployment** → **Source** to **GitHub Actions**. Under **Settings** → **Secrets and variables** → **Actions** → **Variables**, set `GITHUB_PAGES_API_BASE_URL` to the Koyeb service origin, with no trailing slash. This is a public URL, not a secret.
+4. Run **Deploy frontend to GitHub Pages** from the **Actions** tab, or push to `main`. The [Pages workflow](./.github/workflows/deploy-pages.yml) passes that URL to Vite as `VITE_API_BASE_URL` and publishes the frontend at the repository path.
+5. Open the GitHub Pages URL and start a lesson. If requests fail, verify the Koyeb health endpoint, the GitHub repository variable, and the `https://azij2023.github.io` CORS origin. Koyeb's free instance may take time to wake after inactivity.
+
+The GitHub Pages site can publish before its Koyeb URL is configured, but lesson requests will fail until the dedicated backend is running and `GITHUB_PAGES_API_BASE_URL` is set. The two backends keep sessions in separate process memory; neither survives its own restart.
 
 ## Troubleshooting
 
