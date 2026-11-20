@@ -1,9 +1,0 @@
-.git/
-.github/
-.venv/
-.env
-*.env
-__pycache__/
-*.pyc
-frontend/
-*.png

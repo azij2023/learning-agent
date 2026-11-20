@@ -259,7 +259,7 @@ Use the retry endpoint with the same request shape while the session phase is `r
 | `GROQ_API_KEY` | Backend | Required Groq API key. Keep it server-side. |
 | `LEARNING_AGENT_CORS_ORIGINS` | Backend | Comma-separated allowed browser origins. Defaults to `http://localhost:5173`. |
 | `VITE_API_BASE_URL` | Frontend build | Optional API base URL for a separately hosted backend. Empty by default, so requests are relative to the frontend origin. |
-| `GITHUB_PAGES_API_BASE_URL` | GitHub Actions repository variable | Public Koyeb API origin used only by the GitHub Pages build. The workflow passes it to Vite as `VITE_API_BASE_URL`. |
+| `VITE_DEMO_MODE` | Frontend build | Set to `true` only for the GitHub Pages sample; uses prepared lessons and browser-side quiz scoring. |
 | `VITE_API_PROXY_TARGET` | Vite dev server | Optional backend URL for development proxying. Defaults to `http://localhost:8000`. |
 
 For a local setup using a different frontend port, add that exact origin to `LEARNING_AGENT_CORS_ORIGINS`. For a deployed frontend and backend on separate domains, configure both the backend CORS allowlist and the frontend `VITE_API_BASE_URL`.
@@ -310,19 +310,13 @@ Only add trusted frontend origins; do not use `*` for the CORS allowlist. The in
 
 The API currently keeps sessions in process memory and does not configure a LangGraph checkpointer. Sessions are lost when the backend restarts, and separate workers or instances do not share state. Some hosting plans may stop idle services, causing a restart and loss of active sessions. Add shared persistent storage and a compatible LangGraph checkpointer before running multiple workers or scaling horizontally.
 
-## Deploy the separate GitHub version
+## GitHub Pages sample
 
-GitHub Pages hosts the frontend at `https://azij2023.github.io/learning-agent/`. A separate FastAPI service on Koyeb handles its lesson and quiz requests. This service has its own sessions and `GROQ_API_KEY`; it does not call the Render API used by Vercel. GitHub Pages cannot run the Python backend itself.
+The [GitHub Pages site](https://azij2023.github.io/learning-agent/) is a standalone, interactive sample of the learning flow. Its [deployment workflow](./.github/workflows/deploy-pages.yml) builds the Vite frontend with `VITE_DEMO_MODE=true` and publishes it on every push to `main`. It needs no server, Groq key, account, or other hosting provider.
 
-1. [Open the prepared Koyeb deployment](https://app.koyeb.com/deploy?type=git&builder=dockerfile&repository=github.com%2Fazij2023%2Flearning-agent&branch=main&name=learning-agent-github-api&dockerfile=Dockerfile.github-api&instance_type=free&ports=8000%3Bhttp%3B%2F), then review and deploy the **Web Service**. It uses `azij2023/learning-agent` on `main`, `Dockerfile.github-api`, and HTTP port `8000` at `/`. The image defaults `LEARNING_AGENT_CORS_ORIGINS` to `https://azij2023.github.io`.
-2. Add `GROQ_API_KEY` as a Koyeb secret/environment variable. Do not put it in GitHub Actions variables or in the frontend build. Deploy the service and check `https://<your-koyeb-domain>/api/health` for `{"status":"ok"}`.
-3. In the GitHub repository, set **Settings** → **Pages** → **Build and deployment** → **Source** to **GitHub Actions**. Under **Settings** → **Secrets and variables** → **Actions** → **Variables**, set `GITHUB_PAGES_API_BASE_URL` to the Koyeb service origin, with no trailing slash. This is a public URL, not a secret.
-4. Run **Deploy frontend to GitHub Pages** from the **Actions** tab, or push to `main`. The [Pages workflow](./.github/workflows/deploy-pages.yml) passes that URL to Vite as `VITE_API_BASE_URL` and publishes the frontend at the repository path.
-5. Open the GitHub Pages URL and start a lesson. If requests fail, verify the Koyeb health endpoint, the GitHub repository variable, and the `https://azij2023.github.io` CORS origin. Koyeb's free instance may take time to wake after inactivity.
+Choose one of the four sample topics shown on the page. [Prepared lesson and quiz data](./frontend/demo.js) let you read a lesson, answer five questions, see a score and answer feedback, and retry after a score below 70%. Scoring happens in the browser. The page labels itself as a sample so visitors do not mistake its content for AI-generated lessons. Custom topics and notes are available only in the full Render/Vercel app.
 
-The GitHub Pages site can publish before its Koyeb URL is configured, but lesson requests will fail until the dedicated backend is running and `GITHUB_PAGES_API_BASE_URL` is set. The two backends keep sessions in separate process memory; neither survives its own restart.
-
-Koyeb may require a payment card when creating an account. Its free instance has limited CPU and memory, so verify a full lesson and quiz after deployment before relying on it for regular use.
+GitHub Pages is already configured to deploy from GitHub Actions. To rebuild the sample, push to `main` or run **Deploy frontend to GitHub Pages** from the **Actions** tab. The workflow builds with the `/learning-agent/` asset path required by this repository's Pages URL.
 
 ## Troubleshooting
 

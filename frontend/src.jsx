@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import "./style.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
 const SUGGESTED_TOPICS = ["Machine learning", "Space exploration", "Personal finance", "The human brain"];
 
 function FormattedExplanation({ children }) {
@@ -63,7 +64,9 @@ function LearningAgent() {
     setSession(null);
     setAnswers([]);
     try {
-      const result = await send("/api/sessions", { topic, context });
+      const result = DEMO_MODE
+        ? (await import("./demo.js")).createDemoSession(topic)
+        : await send("/api/sessions", { topic, context });
       setSession(result);
       setAnswers(Array(result.questions.length).fill(""));
     } catch (requestError) {
@@ -81,10 +84,12 @@ function LearningAgent() {
     setLoading(true);
     setError("");
     try {
-      const route = retry
-        ? `/api/sessions/${session.sessionId}/retry`
-        : `/api/sessions/${session.sessionId}/answers`;
-      const result = await send(route, { answers });
+      const result = DEMO_MODE
+        ? (await import("./demo.js")).scoreDemoSession(session, answers)
+        : await send(
+            retry ? `/api/sessions/${session.sessionId}/retry` : `/api/sessions/${session.sessionId}/answers`,
+            { answers },
+          );
       setSession(result);
       setAnswers(Array(result.questions.length).fill(""));
     } catch (requestError) {
@@ -148,22 +153,29 @@ function LearningAgent() {
         />
       )}
       <header className="topbar">
-        <a className="brand" href="/" aria-label="Learning Agent home">
+        <a className="brand" href={import.meta.env.BASE_URL} aria-label="Learning Agent home">
           <span className="brand-mark">L</span>
           <span>Learning Agent</span>
         </a>
         <div className="topbar-actions">
-          <span className="topbar-note"><span className="status-dot" /> Your personal AI tutor</span>
+          <span className="topbar-note"><span className="status-dot" /> {DEMO_MODE ? "Interactive sample" : "Your personal AI tutor"}</span>
           {session && <button className="text-button" onClick={startNewLesson}>＋ New lesson</button>}
         </div>
       </header>
+      {DEMO_MODE && (
+        <div className="demo-notice" role="note">
+          <strong>GitHub Pages sample</strong> — Explore prepared lessons and try the quiz. Everything runs in your browser; no AI or server is used.
+        </div>
+      )}
 
       {!session ? (
         <section className="welcome-grid">
           <div className="hero">
             <div className="eyebrow"><span /> LEARN AT YOUR PACE</div>
             <h1>Big ideas,<br /><span>made simple.</span></h1>
-            <p>Your AI tutor turns any topic into a clear lesson, then helps you check what you’ve learned. No pressure—just progress.</p>
+            <p>{DEMO_MODE
+              ? "Explore a prepared lesson, check your understanding, and try again with a simpler explanation."
+              : "Your AI tutor turns any topic into a clear lesson, then helps you check what you’ve learned. No pressure—just progress."}</p>
             <div className="hero-points">
               <div><span className="point-icon">✦</span><span><strong>Learn your way</strong><small>Add your notes or start from scratch</small></span></div>
               <div><span className="point-icon">✓</span><span><strong>Build confidence</strong><small>Quick quizzes make progress visible</small></span></div>
@@ -175,29 +187,33 @@ function LearningAgent() {
             <form className="topic-card" onSubmit={startLearning}>
               <div className="section-label">LET’S GET STARTED</div>
               <h2>What are you curious about?</h2>
-              <p className="form-intro">Pick a topic and we’ll build a lesson just for you.</p>
+              <p className="form-intro">{DEMO_MODE ? "Choose one of the four sample topics below." : "Pick a topic and we’ll build a lesson just for you."}</p>
               <label htmlFor="topic">YOUR TOPIC</label>
               <input
                 id="topic"
                 value={topic}
                 onChange={(event) => setTopic(event.target.value)}
-                placeholder="e.g. Machine learning"
+                placeholder={DEMO_MODE ? "Choose a sample topic below" : "e.g. Machine learning"}
                 maxLength={300}
                 required
               />
-              <label htmlFor="context">YOUR NOTES <span className="optional">OPTIONAL</span></label>
-              <textarea
-                id="context"
-                value={context}
-                onChange={(event) => setContext(event.target.value)}
-                placeholder="Paste notes or context you'd like the tutor to use..."
-                rows={3}
-                maxLength={20000}
-              />
+              {!DEMO_MODE && (
+                <>
+                  <label htmlFor="context">YOUR NOTES <span className="optional">OPTIONAL</span></label>
+                  <textarea
+                    id="context"
+                    value={context}
+                    onChange={(event) => setContext(event.target.value)}
+                    placeholder="Paste notes or context you'd like the tutor to use..."
+                    rows={3}
+                    maxLength={20000}
+                  />
+                </>
+              )}
               <button className="primary-button start-button" disabled={loading}>
                 {loading ? <><span className="spinner" /> Building your lesson...</> : <>Start learning <span aria-hidden="true">→</span></>}
               </button>
-              {loading && <p className="loading-note">Your tutor is putting together a lesson and quiz.</p>}
+              {loading && !DEMO_MODE && <p className="loading-note">Your tutor is putting together a lesson and quiz.</p>}
               <div className="suggestions">
                 <span>NEED AN IDEA?</span>
                 <div>{SUGGESTED_TOPICS.map((suggestion) => (
@@ -216,9 +232,9 @@ function LearningAgent() {
             <div>
               <div className="eyebrow"><span /> YOUR LEARNING SESSION</div>
               <h1>{session.topic}</h1>
-              <p>Take it one step at a time. You’re doing great.</p>
+              <p>{DEMO_MODE ? "Prepared lesson and browser-scored quiz." : "Take it one step at a time. You’re doing great."}</p>
             </div>
-            <div className="session-badge"><span>✦</span> PERSONALIZED LESSON</div>
+            <div className="session-badge"><span>✦</span> {DEMO_MODE ? "SAMPLE LESSON" : "PERSONALIZED LESSON"}</div>
           </div>
           <SessionProgress phase={session.phase} />
           {error && <div className="alert error-alert" role="alert">{error}</div>}
