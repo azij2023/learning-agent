@@ -314,13 +314,15 @@ The API currently keeps sessions in process memory and does not configure a Lang
 
 GitHub Pages hosts the frontend at `https://azij2023.github.io/learning-agent/`. A separate FastAPI service on Koyeb handles its lesson and quiz requests. This service has its own sessions and `GROQ_API_KEY`; it does not call the Render API used by Vercel. GitHub Pages cannot run the Python backend itself.
 
-1. In [Koyeb](https://app.koyeb.com/), create a **Web Service** from `azij2023/learning-agent` on `main`. Choose **Dockerfile** as the builder and set its location to `Dockerfile.github-api`. Expose port `8000` as HTTP with the `/` route. The image defaults `LEARNING_AGENT_CORS_ORIGINS` to `https://azij2023.github.io`.
+1. [Open the prepared Koyeb deployment](https://app.koyeb.com/deploy?type=git&builder=dockerfile&repository=github.com%2Fazij2023%2Flearning-agent&branch=main&name=learning-agent-github-api&dockerfile=Dockerfile.github-api&instance_type=free&ports=8000%3Bhttp%3B%2F), then review and deploy the **Web Service**. It uses `azij2023/learning-agent` on `main`, `Dockerfile.github-api`, and HTTP port `8000` at `/`. The image defaults `LEARNING_AGENT_CORS_ORIGINS` to `https://azij2023.github.io`.
 2. Add `GROQ_API_KEY` as a Koyeb secret/environment variable. Do not put it in GitHub Actions variables or in the frontend build. Deploy the service and check `https://<your-koyeb-domain>/api/health` for `{"status":"ok"}`.
 3. In the GitHub repository, set **Settings** → **Pages** → **Build and deployment** → **Source** to **GitHub Actions**. Under **Settings** → **Secrets and variables** → **Actions** → **Variables**, set `GITHUB_PAGES_API_BASE_URL` to the Koyeb service origin, with no trailing slash. This is a public URL, not a secret.
 4. Run **Deploy frontend to GitHub Pages** from the **Actions** tab, or push to `main`. The [Pages workflow](./.github/workflows/deploy-pages.yml) passes that URL to Vite as `VITE_API_BASE_URL` and publishes the frontend at the repository path.
 5. Open the GitHub Pages URL and start a lesson. If requests fail, verify the Koyeb health endpoint, the GitHub repository variable, and the `https://azij2023.github.io` CORS origin. Koyeb's free instance may take time to wake after inactivity.
 
 The GitHub Pages site can publish before its Koyeb URL is configured, but lesson requests will fail until the dedicated backend is running and `GITHUB_PAGES_API_BASE_URL` is set. The two backends keep sessions in separate process memory; neither survives its own restart.
+
+Koyeb may require a payment card when creating an account. Its free instance has limited CPU and memory, so verify a full lesson and quiz after deployment before relying on it for regular use.
 
 ## Troubleshooting
 
