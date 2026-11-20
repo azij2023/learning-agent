@@ -162,12 +162,6 @@ function LearningAgent() {
           {session && <button className="text-button" onClick={startNewLesson}>＋ New lesson</button>}
         </div>
       </header>
-      {DEMO_MODE && (
-        <div className="demo-notice" role="note">
-          <strong>GitHub Pages sample</strong> — Explore prepared lessons and try the quiz. Everything runs in your browser; no AI or server is used.
-        </div>
-      )}
-
       {!session ? (
         <section className="welcome-grid">
           <div className="hero">
